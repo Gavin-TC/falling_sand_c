@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -I src/include
-LDFLAGS = -L src/lib -lSDL2 -lmingw32 -lm
+LDFLAGS = -L src/lib -lSDL2 -lmingw32 -lm -static-libgcc
 SOURCES = src/main.c
 OUTPUT = falling_sand
 

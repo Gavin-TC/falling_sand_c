@@ -202,7 +202,6 @@ int main() {
 				if (event.button.button == SDL_BUTTON_LEFT) {
 					mouse_1_pressed = 1;
 				} else if (event.button.button == SDL_BUTTON_RIGHT) {
-					printf("mouse 2 pressed\n");
 					mouse_2_pressed = 1;
 				}
 
