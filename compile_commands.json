@@ -1,7 +1,7 @@
 [
   {
     "directory": "C:/Users/codma/Documents/Programming/C/falling_sand",
-    "command": "gcc -I src/include -o falling_sand src/main.c -L src/lib -lSDL2",
+    "command": "gcc -I src/include -o falling_sand src/main.c -L src/lib -lSDL2 -lmingw32 -lm -static-libgcc",
     "file": "src/main.c"
   }
 ]

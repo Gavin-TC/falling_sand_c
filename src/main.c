@@ -33,7 +33,7 @@ void copy_arr(int source[ROWS][COLS], int dest[ROWS][COLS]) {
 	}
 }
 
-void simulate(int env[ROWS][COLS], int steps) {
+void simulate(int env[ROWS][COLS], int steps, int sim_ticks) {
     if (steps < 1) {
         return;
     }
@@ -43,50 +43,60 @@ void simulate(int env[ROWS][COLS], int steps) {
         int n_env[ROWS][COLS] = {0};
 
 		for (int i = 0; i < ROWS; i++) {
-			//for (int j = COLS; j >= 0; j--) {
-			for (int j = 0; j < COLS; j++) {
-				if (env[i][j] == WALL_TILE || EMPTY_TILE) {
-					n_env[i][j] = env[i][j];
+			for (int j = COLS; j >= 0; j--) {
+			//for (int j = 0; j < COLS; j++) {
+				int tile = env[i][j];
+
+				if (tile == WALL_TILE) {
+					n_env[i][j] = WALL_TILE;
 					continue;
 				}
 
-				if (env[i][j] == SAND_TILE) {
-					if (j + 1 > COLS - 1) {
+				if (tile == SAND_TILE) {
+					if (j + 1 >= COLS) {
 						n_env[i][j] = SAND_TILE;
 						continue;
 					}
 
 					if (env[i][j + 1] == EMPTY_TILE) {
 						n_env[i][j + 1] = SAND_TILE;
-					} else if (env[i][j + 1] == SAND_TILE) {
-						int right_clear = env[i + 1][j + 1] == EMPTY_TILE && i + 1 < ROWS;
-						int left_clear = env[i - 1][j + 1] == EMPTY_TILE && i - 1 >= 0;
-
-						// If both sides are clear, randomly pick one
-						// If only one, then choose that one
-						// Else, keep the sand at it's tile
-						if (right_clear && left_clear) {
-							int side = rand() % 2 + 1;
-
-							if (side == 1) {
-								n_env[i + 1][j + 1] = SAND_TILE;
-							} else {
-								n_env[i - 1][j + 1] = SAND_TILE;
-							}
-						} else if (right_clear) {
-							n_env[i + 1][j + 1] = SAND_TILE;
-						} else if (left_clear) {
-							n_env[i - 1][j + 1] = SAND_TILE;
-						} else {
-							n_env[i][j] = SAND_TILE;
-						}
-					} else if (env[i][j + 1] == WALL_TILE) {
-						n_env[i][j] = SAND_TILE;
+						continue;
 					}
+
+					if (env[i][j + 1] == WALL_TILE) {
+						n_env[i][j] = SAND_TILE;
+						continue;
+					}
+
+					int right_clear = (i + 1 < ROWS) && env[i + 1][j + 1] == EMPTY_TILE;
+					int left_clear = (i - 1 >= 0) && env[i - 1][j + 1] == EMPTY_TILE;
+
+					if (right_clear && left_clear) {
+						int rnd = rand() % 2;
+
+						if (rnd == 0) {
+							n_env[i + 1][j + 1] = SAND_TILE;
+						} else {
+							n_env[i - 1][j + 1] = SAND_TILE;
+						}
+						continue;
+					}
+
+					if (right_clear) {
+						n_env[i + 1][j + 1] = SAND_TILE;
+						continue;
+					}
+
+					if (left_clear) {
+						n_env[i - 1][j + 1] = SAND_TILE;
+						continue;
+					}
+
+					n_env[i][j] = SAND_TILE;
 				}
 			}
 		}
-        
+
         copy_arr(n_env, env);
 	}
 }
@@ -144,6 +154,8 @@ int main() {
 
 
 	int fps = 120;
+	int sim_ticks = 0;
+	int game_ticks = 0;
 	int draw_grid = 0;
     int sim_paused = 0;
 	int sand_toggle = 1; // 1 = sand, 0 = wall
@@ -155,6 +167,9 @@ int main() {
 	int mouse_2_pressed = 0;
 
 	int brush_size = 1;
+
+	int virtual_sand_px = 0;
+	int actual_sand_px = 0;
 	
 	initialize_environment(env);
 
@@ -182,7 +197,7 @@ int main() {
 				}
 
 				if (event.key.keysym.sym == SDLK_n && sim_paused == 1) {
-                    simulate(env, 1);
+                    simulate(env, 1, sim_ticks);
 				}
 
 				if (event.key.keysym.sym == SDLK_UP) {
@@ -195,6 +210,23 @@ int main() {
 
 				if (event.key.keysym.sym == SDLK_r) {
 					initialize_environment(env);
+				}
+
+				if (event.key.keysym.sym == SDLK_c) {
+					actual_sand_px = 0;
+
+					for (int i = 0; i < ROWS; i++) {
+						for (int j = 0; j < COLS; j++) {
+							if (env[i][j] == SAND_TILE) {
+								actual_sand_px++;
+							}
+						}
+					}
+				}
+
+				if (event.key.keysym.sym == SDLK_x) {
+					virtual_sand_px = 0;
+					actual_sand_px = 0;
 				}
 			}
 
@@ -225,7 +257,10 @@ int main() {
 			if (mouse_1_pressed == 1 && env[col][row] != WALL_TILE) {
 				for (int i = 0; i < brush_size; i++) {
 					for (int j = 0; j < brush_size; j++) {
-						env[i + col - brush_size / 2][j + row - brush_size / 2] = sand_toggle ? SAND_TILE : WALL_TILE;
+						if (env[i + col - brush_size / 2][j + row - brush_size / 2] != WALL_TILE &&
+							env[i + col - brush_size / 2][j + row - brush_size / 2] != SAND_TILE) {
+							env[i + col - brush_size / 2][j + row - brush_size / 2] = sand_toggle ? SAND_TILE : WALL_TILE;
+						}
 					}
 				}
 			} else if (mouse_2_pressed == 1) {
@@ -241,8 +276,14 @@ int main() {
 		render_screen(screen, env, draw_grid);
 
         if (sim_paused == 0) {
-            simulate(env, 1);
+            simulate(env, 1, sim_ticks);
+			sim_ticks++;
         }
+
+		if (game_ticks % 1 == 0) {
+			printf("actual_sand_px: %d\n", actual_sand_px);
+		}
+		game_ticks++;
 
 		SDL_UpdateWindowSurface(window); // Update the screen
 		SDL_Delay((int) 1000 / fps);
